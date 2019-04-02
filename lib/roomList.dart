@@ -11,6 +11,7 @@ class RoomList extends StatefulWidget {
 class RoomListState extends State<RoomList> {
   final roomController = new TextEditingController();
   bool showModal = false;
+  bool validation = false;
 
   Widget roomList() {
     if (showModal) {
@@ -24,15 +25,27 @@ class RoomListState extends State<RoomList> {
             TextField(
               controller: roomController,
               decoration: InputDecoration(
-                  hintText: 'Enter room name',
-                  focusedBorder: OutlineInputBorder(
-                    borderSide: BorderSide(
-                      color: Colors.blueGrey,
-                    ),
-                    borderRadius: BorderRadius.circular(13),
+                errorText: validation ? 'Enter a value' : null,
+                hintText: 'Enter room name',
+                focusedBorder: OutlineInputBorder(
+                  borderSide: BorderSide(
+                    color: Colors.blueGrey,
                   ),
-                  enabledBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: Colors.blueGrey))),
+                  borderRadius: BorderRadius.circular(13),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: Colors.blueGrey),
+                ),
+                errorBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: Colors.red),
+                ),
+                focusedErrorBorder: OutlineInputBorder(
+                  borderSide: BorderSide(
+                    color: Colors.red,
+                  ),
+                  borderRadius: BorderRadius.circular(13),
+                ),
+              ),
             ),
             Padding(
               padding: EdgeInsets.all(10),
@@ -47,10 +60,10 @@ class RoomListState extends State<RoomList> {
             stream: Firestore.instance.collection('rooms').snapshots(),
             builder:
                 (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
-              return new ListView.builder(
-                shrinkWrap: true,
-                itemBuilder: (context, int index) {
-                  if (snapshot.hasData) {
+              if (snapshot.hasData) {
+                return new ListView.builder(
+                  shrinkWrap: true,
+                  itemBuilder: (context, int index) {
                     DocumentSnapshot document = snapshot.data.documents[index];
                     return ScopedModelDescendant<UserModel>(
                         builder: (context, child, model) =>
@@ -77,16 +90,16 @@ class RoomListState extends State<RoomList> {
                                 ),
                               ),
                             )));
-                  }
-                },
-                itemCount: snapshot.data.documents.length,
-              );
+                  },
+                  itemCount: snapshot.data.documents.length,
+                );
+              }
             }),
       );
     }
   }
 
-  Future<void> loadRoom() async {
+  loadRoom() async {
     await Firestore.instance
         .collection('rooms')
         .document(roomController.text)
@@ -99,7 +112,7 @@ class RoomListState extends State<RoomList> {
     });
 
     roomController.clear();
-    await Navigator.pushNamed(context, '/chat');
+    Navigator.pushNamed(context, '/chat');
   }
 
   Widget createRoom() {
@@ -125,8 +138,17 @@ class RoomListState extends State<RoomList> {
                     child: IconButton(
                       icon: Icon(Icons.add_circle),
                       onPressed: () {
-                        model.changeRoomName(roomController.text);
-                        loadRoom();
+                        if (roomController.text.isEmpty) {
+                          setState(() {
+                            validation = true;
+                          });
+                        } else {
+                          setState(() {
+                            validation = false;
+                          });
+                          model.changeRoomName(roomController.text);
+                          loadRoom();
+                        }
                       },
                     ),
                   ),

@@ -106,10 +106,11 @@ class _ChatRoomState extends State<ChatRoom> {
             },
             itemCount: snapshot.data.documents.length,
           );
+        } else {
+          return new Center(
+            child: CircularProgressIndicator(),
+          );
         }
-        return new Center(
-          child: CircularProgressIndicator(),
-        );
       },
     );
   }
